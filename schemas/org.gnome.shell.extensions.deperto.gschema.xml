@@ -6,5 +6,10 @@
       <summary>Modifier key to activate zoom</summary>
       <description>The key combination to hold while scrolling to zoom. Options: super-alt, ctrl-super.</description>
     </key>
+    <key name="zoom-step" type="d">
+      <default>0.25</default>
+      <summary>Zoom step size</summary>
+      <description>The amount to zoom in or out per scroll event.</description>
+    </key>
   </schema>
 </schemalist>

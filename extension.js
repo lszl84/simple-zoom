@@ -93,17 +93,17 @@ export default class ZoomByScrollExtension extends Extension {
         // Zoom Logic
         const direction = event.get_scroll_direction();
         let zoomChange = 0;
-        const ZOOM_STEP = 0.25; // Zoom sensitivity
+        const zoomStep = this._settings.get_double('zoom-step');
 
         if (direction === Clutter.ScrollDirection.SMOOTH) {
             const [dx, dy] = event.get_scroll_delta();
             // negative dy is scroll up (zoom in)
-            zoomChange = -dy * ZOOM_STEP; 
+            zoomChange = -dy * zoomStep; 
         } else {
             if (direction === Clutter.ScrollDirection.UP) {
-                zoomChange = ZOOM_STEP;
+                zoomChange = zoomStep;
             } else if (direction === Clutter.ScrollDirection.DOWN) {
-                zoomChange = -ZOOM_STEP;
+                zoomChange = -zoomStep;
             }
         }
 
