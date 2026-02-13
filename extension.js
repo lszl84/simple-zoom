@@ -1,32 +1,23 @@
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
+import GDesktopEnums from 'gi://GDesktopEnums';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 export default class ZoomByScrollExtension extends Extension {
     enable() {
-        console.log("[Deperto] Enabling extension");
+        console.log("[Deperto] Enabling extension - Direct Magnifier Mode");
 
-        // 0. Load the extension's own settings
         this._settings = this.getSettings();
-
-        // 1. Configure Window Manager (Force Super)
+        
+        // 1. Configure Window Manager (Force Super as modifier to free up Alt)
         this._wmSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.wm.preferences' });
         this._originalWmModifier = this._wmSettings.get_string('mouse-button-modifier');
-        
-        // Explicitly set to Super, allowing Alt to be free for our combination
         this._wmSettings.set_string('mouse-button-modifier', '<Super>');
 
-        // 2. Configure Magnifier (Zoom)
-        this._a11ySettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.a11y.applications' });
-        this._originalMagnifierEnabled = this._a11ySettings.get_boolean('screen-magnifier-enabled');
-        // Ensure the magnifier feature is enabled in the system
-        this._a11ySettings.set_boolean('screen-magnifier-enabled', true);
-
-        this._magSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.a11y.magnifier' });
-        this._originalMouseTracking = this._magSettings.get_enum('mouse-tracking');
-        // Force 'proportional' mode so the zoom follows the mouse
-        this._magSettings.set_enum('mouse-tracking', 2); 
-
+        // 2. Internal State
+        this._currentZoom = 1.0;
+        
         // 3. Capture Events
         this._stageSignalId = global.stage.connect('captured-event', this._onCapturedEvent.bind(this));
     }
@@ -40,23 +31,17 @@ export default class ZoomByScrollExtension extends Extension {
             this._stageSignalId = null;
         }
 
-        // 2. Restore original settings
+        // 2. Restore original window manager settings
         if (this._wmSettings) {
-            // Restore the previous window action key (or keep Super if it fails)
             if (this._originalWmModifier) {
                 this._wmSettings.set_string('mouse-button-modifier', this._originalWmModifier);
             }
             this._wmSettings = null;
         }
 
-        if (this._magSettings) {
-            this._magSettings.set_enum('mouse-tracking', this._originalMouseTracking);
-            this._magSettings = null;
-        }
-
-        if (this._a11ySettings) {
-            this._a11ySettings.set_boolean('screen-magnifier-enabled', this._originalMagnifierEnabled);
-            this._a11ySettings = null;
+        // 3. Reset zoom and deactivate magnifier if we activated it
+        if (this._currentZoom > 1.0) {
+            this._applyZoom(1.0);
         }
         
         this._settings = null;
@@ -77,7 +62,7 @@ export default class ZoomByScrollExtension extends Extension {
 
         let match = false;
 
-        // Check which combination the user chose
+        // Check for specific combinations: Super+Alt or Super+Ctrl
         if (selectedModifier === 'ctrl-super') {
             match = hasCtrl && hasSuper;
         } else {
@@ -93,35 +78,65 @@ export default class ZoomByScrollExtension extends Extension {
         // Zoom Logic
         const direction = event.get_scroll_direction();
         let zoomChange = 0;
-        const zoomStep = this._settings.get_double('zoom-step');
+        const ZOOM_STEP = this._settings.get_double('zoom-step') || 0.25;
 
         if (direction === Clutter.ScrollDirection.SMOOTH) {
             const [dx, dy] = event.get_scroll_delta();
-            // negative dy is scroll up (zoom in)
-            zoomChange = -dy * zoomStep; 
+            zoomChange = -dy * ZOOM_STEP; 
         } else {
             if (direction === Clutter.ScrollDirection.UP) {
-                zoomChange = zoomStep;
+                zoomChange = ZOOM_STEP;
             } else if (direction === Clutter.ScrollDirection.DOWN) {
-                zoomChange = -zoomStep;
+                zoomChange = -ZOOM_STEP;
             }
         }
 
-        // Avoid unnecessary processing for tiny movements
         if (Math.abs(zoomChange) < 0.001) return Clutter.EVENT_STOP;
 
-        // Apply the new zoom
-        let currentZoom = this._magSettings.get_double('mag-factor');
-        let newZoom = currentZoom + zoomChange;
+        let newZoom = this._currentZoom + zoomChange;
 
         // Safety limits (1.0x to 20.0x)
         if (newZoom < 1.0) newZoom = 1.0;
         if (newZoom > 20.0) newZoom = 20.0;
 
-        if (newZoom !== currentZoom) {
-            this._magSettings.set_double('mag-factor', newZoom);
+        if (newZoom !== this._currentZoom) {
+            this._applyZoom(newZoom);
         }
 
-        return Clutter.EVENT_STOP; // Prevent the scroll from affecting the window/app below
+        return Clutter.EVENT_STOP;
+    }
+
+    _applyZoom(zoomFactor) {
+        this._currentZoom = zoomFactor;
+
+        if (!Main.magnifier) {
+            console.error("[Deperto] Main.magnifier not found");
+            return;
+        }
+
+        // Activation/Deactivation
+        if (this._currentZoom > 1.0) {
+            if (!Main.magnifier.isActive()) {
+                Main.magnifier.setActive(true);
+            }
+        } else {
+            if (Main.magnifier.isActive()) {
+                Main.magnifier.setActive(false);
+            }
+        }
+
+        // Apply zoom factor to all regions
+        let regions = Main.magnifier.getZoomRegions();
+        if (regions.length === 0 && this._currentZoom > 1.0) {
+            // If no regions exist but we need zoom, add one
+            Main.magnifier.addZoomRegion(zoomFactor, zoomFactor, 0, 0);
+            regions = Main.magnifier.getZoomRegions();
+        }
+
+        regions.forEach(region => {
+            region.setMagFactor(zoomFactor, zoomFactor);
+            // Force proportional tracking so it follows the mouse
+            region.setMouseTrackingMode(GDesktopEnums.MagnifierMouseTrackingMode.PROPORTIONAL);
+        });
     }
 }
