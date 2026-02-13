@@ -51,5 +51,34 @@ export default class ZoomByScrollPreferences extends ExtensionPreferences {
                 settings.set_string('modifier-key', optionItems[selectedIndex]);
             }
         });
+
+        // Zoom Step Group
+        const zoomGroup = new Adw.PreferencesGroup({
+            title: _('Zoom Behavior'),
+            description: _('Configure how the zoom behaves'),
+        });
+        page.add(zoomGroup);
+
+        // Zoom Step SpinRow
+        const zoomStepRow = new Adw.SpinRow({
+            title: _('Zoom Step'),
+            subtitle: _('The amount to zoom in or out per scroll event'),
+            adjustment: new Gtk.Adjustment({
+                value: settings.get_double('zoom-step'),
+                lower: 0.05,
+                upper: 1.0,
+                step_increment: 0.05,
+                page_increment: 0.1,
+            }),
+            digits: 2,
+        });
+        zoomGroup.add(zoomStepRow);
+
+        settings.bind(
+            'zoom-step',
+            zoomStepRow,
+            'value',
+            Gio.SettingsBindFlags.DEFAULT
+        );
     }
 }
