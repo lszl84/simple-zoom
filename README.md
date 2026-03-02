@@ -16,7 +16,7 @@ It brings the legendary **XFCE-style Zoom** to GNOME Shell.
 
 It uses the native GNOME magnifier but forces it to behave like a sane tool: `proportional` tracking. That means the zoom follows your cursor, not the center of the screen.
 
-## 🎮 How to use
+## How to use
 1. Hold the **Super** key (the one with the Windows logo).
 2. **Scroll Up** to zoom in (ENHANCE!).
 3. **Scroll Down** to zoom out.
@@ -32,7 +32,7 @@ In standard GNOME, `Super + Scroll` might be used to switch workspaces.
 ~~This extension hijacks that shortcut. We stole it. It's ours now.~~ **This isn't really the case anymore, but I'm keeping it because I like the
   humor.**
 
-## 📉 The Shortcut Diet (The "Peace with GNOME" Update)
+## The Shortcut Diet (The "Peace with GNOME" Update)
 
 I realized that `Super + Scroll` is like a sacred relic in GNOME—mess with it. To keep the peace and your sanity intact, I've condensed our shortcuts into two clean, conflict-free combos:
 
@@ -54,5 +54,4 @@ I realized that `Super + Scroll` is like a sacred relic in GNOME—mess with it.
 4. Enable via **Extensions** app.
 
 
----
-*Made with ❤️.  Brasil sil sil!
+
