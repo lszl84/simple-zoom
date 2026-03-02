@@ -1,4 +1,4 @@
-# 🔍 Deperto (Zoom by Scroll)
+# Deperto (Zoom by Scroll)
 
 **Stop squinting. Your eyes will thank you.**
 
@@ -6,7 +6,7 @@ Ever tried to read 8px font on a 4K monitor and felt your soul leaving your body
 
 Nice!
 
-## 🚀 What does it do?
+## What does it do?
 It brings the legendary **XFCE-style Zoom** to GNOME Shell.
 
 - **Point** your mouse at something interesting.
@@ -26,7 +26,7 @@ https://github.com/user-attachments/assets/516d87ef-eeae-4f37-bac1-32e70b6a7d20
 
 
 
-### ⚠️ A Note on "Super + Scroll"
+### A Note on "Super + Scroll"
 In standard GNOME, `Super + Scroll` might be used to switch workspaces.
 **Not anymore.**
 ~~This extension hijacks that shortcut. We stole it. It's ours now.~~ **This isn't really the case anymore, but I'm keeping it because I like the
@@ -39,7 +39,7 @@ I realized that `Super + Scroll` is like a sacred relic in GNOME—mess with it.
 1.  **`Super + Alt + Scroll`** (The Classic/Default): It's like a secret handshake for your fingers.
 2.  **`Ctrl + Super + Scroll`** (The Power User): For those who like to use all their fingers at once.
 
-## 📦 Installation
+## Installation
 
 ### Gnome Extensions
 [https://extensions.gnome.org/extension/9256/deperto-zoom-by-scroll/](https://extensions.gnome.org/extension/9256/deperto-zoom-by-scroll/)
