@@ -8,11 +8,12 @@
     "46",
     "47",
     "48",
-    "49"
+    "49",
+    "50"
   ],
   "settings-schema": "org.gnome.shell.extensions.deperto",
   "donations": {
     "github": "dennisguim"
   },
-  "version": 6
+  "version": 7
 }

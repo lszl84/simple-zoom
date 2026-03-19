@@ -129,8 +129,9 @@ export default class ZoomByScrollExtension extends Extension {
         let regions = Main.magnifier.getZoomRegions();
         if (regions.length === 0 && this._currentZoom > 1.0) {
             // If no regions exist but we need zoom, create and add one
-            const roi = { x: 0, y: 0, width: global.screen_width, height: global.screen_height };
-            const viewPort = { x: 0, y: 0, width: global.screen_width, height: global.screen_height };
+            const [width, height] = global.display.get_size();
+            const roi = { x: 0, y: 0, width, height };
+            const viewPort = { x: 0, y: 0, width, height };
             const newRegion = Main.magnifier.createZoomRegion(zoomFactor, zoomFactor, roi, viewPort);
             Main.magnifier.addZoomRegion(newRegion);
             regions = [newRegion];
