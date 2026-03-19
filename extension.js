@@ -128,15 +128,28 @@ export default class ZoomByScrollExtension extends Extension {
         // Apply zoom factor to all regions
         let regions = Main.magnifier.getZoomRegions();
         if (regions.length === 0 && this._currentZoom > 1.0) {
-            // If no regions exist but we need zoom, add one
-            Main.magnifier.addZoomRegion(zoomFactor, zoomFactor, 0, 0);
-            regions = Main.magnifier.getZoomRegions();
+            // If no regions exist but we need zoom, create and add one
+            const roi = { x: 0, y: 0, width: global.screen_width, height: global.screen_height };
+            const viewPort = { x: 0, y: 0, width: global.screen_width, height: global.screen_height };
+            const newRegion = Main.magnifier.createZoomRegion(zoomFactor, zoomFactor, roi, viewPort);
+            Main.magnifier.addZoomRegion(newRegion);
+            regions = [newRegion];
         }
 
         regions.forEach(region => {
-            region.setMagFactor(zoomFactor, zoomFactor);
-            // Force proportional tracking so it follows the mouse
-            region.setMouseTrackingMode(GDesktopEnums.MagnifierMouseTrackingMode.PROPORTIONAL);
+            // Use _changeROI with animate: false for better performance (FPS)
+            // as suggested by user in GitHub issue. setMagFactor has animate: true hardcoded.
+            region._changeROI({
+                xMagFactor: zoomFactor,
+                yMagFactor: zoomFactor,
+                redoCursorTracking: true,
+                animate: false,
+            });
+            
+            // Ensure proportional tracking so it follows the mouse
+            if (region.getMouseTrackingMode() !== GDesktopEnums.MagnifierMouseTrackingMode.PROPORTIONAL) {
+                region.setMouseTrackingMode(GDesktopEnums.MagnifierMouseTrackingMode.PROPORTIONAL);
+            }
         });
     }
 }
