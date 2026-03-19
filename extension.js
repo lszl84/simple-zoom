@@ -15,11 +15,21 @@ export default class ZoomByScrollExtension extends Extension {
         this._originalWmModifier = this._wmSettings.get_string('mouse-button-modifier');
         this._wmSettings.set_string('mouse-button-modifier', '<Super>');
 
-        // 2. Internal State
+        // 2. Cache settings for performance
+        this._updateSettings();
+        this._settingsChangedId = this._settings.connect('changed', this._updateSettings.bind(this));
+
+        // 3. Internal State
         this._currentZoom = 1.0;
         
-        // 3. Capture Events
+        // 4. Capture Events
         this._stageSignalId = global.stage.connect('captured-event', this._onCapturedEvent.bind(this));
+    }
+
+    _updateSettings() {
+        this._modifierKey = this._settings.get_string('modifier-key');
+        this._zoomStep = this._settings.get_double('zoom-step');
+        this._smoothZoom = this._settings.get_boolean('smooth-zoom');
     }
 
     disable() {
@@ -31,7 +41,13 @@ export default class ZoomByScrollExtension extends Extension {
             this._stageSignalId = null;
         }
 
-        // 2. Restore original window manager settings
+        // 2. Disconnect Settings
+        if (this._settingsChangedId) {
+            this._settings.disconnect(this._settingsChangedId);
+            this._settingsChangedId = null;
+        }
+
+        // 3. Restore original window manager settings
         if (this._wmSettings) {
             if (this._originalWmModifier) {
                 this._wmSettings.set_string('mouse-button-modifier', this._originalWmModifier);
@@ -39,7 +55,7 @@ export default class ZoomByScrollExtension extends Extension {
             this._wmSettings = null;
         }
 
-        // 3. Reset zoom and deactivate magnifier if we activated it
+        // 4. Reset zoom and deactivate magnifier if we activated it
         if (this._currentZoom > 1.0) {
             this._applyZoom(1.0);
         }
@@ -54,7 +70,7 @@ export default class ZoomByScrollExtension extends Extension {
         }
 
         const state = event.get_state();
-        const selectedModifier = this._settings.get_string('modifier-key');
+        const selectedModifier = this._modifierKey;
         
         const hasSuper = (state & Clutter.ModifierType.MOD4_MASK) !== 0;
         const hasAlt = (state & Clutter.ModifierType.MOD1_MASK) !== 0;
@@ -78,7 +94,7 @@ export default class ZoomByScrollExtension extends Extension {
         // Zoom Logic
         const direction = event.get_scroll_direction();
         let zoomChange = 0;
-        const ZOOM_STEP = this._settings.get_double('zoom-step') || 0.25;
+        const ZOOM_STEP = this._zoomStep || 0.25;
 
         if (direction === Clutter.ScrollDirection.SMOOTH) {
             const [dx, dy] = event.get_scroll_delta();
@@ -138,13 +154,14 @@ export default class ZoomByScrollExtension extends Extension {
         }
 
         regions.forEach(region => {
-            // Use _changeROI with animate: false for better performance (FPS)
-            // as suggested by user in GitHub issue. setMagFactor has animate: true hardcoded.
+            // Use _changeROI with configurable animation
+            // animate: true is smoother but can lag during rapid scrolling (Issue azacio)
+            // animate: false is much faster and more responsive (Issue account1009)
             region._changeROI({
                 xMagFactor: zoomFactor,
                 yMagFactor: zoomFactor,
                 redoCursorTracking: true,
-                animate: false,
+                animate: this._smoothZoom,
             });
             
             // Ensure proportional tracking so it follows the mouse

@@ -11,5 +11,10 @@
       <summary>Zoom step size</summary>
       <description>The amount to zoom in or out per scroll event.</description>
     </key>
+    <key name="smooth-zoom" type="b">
+      <default>false</default>
+      <summary>Smooth zoom</summary>
+      <description>Enable animation when changing zoom levels. This can make the zoom feel smoother but may cause lag during rapid scrolling.</description>
+    </key>
   </schema>
 </schemalist>

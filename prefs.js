@@ -81,5 +81,20 @@ export default class ZoomByScrollPreferences extends ExtensionPreferences {
             'value',
             Gio.SettingsBindFlags.DEFAULT
         );
+
+        // Smooth Zoom Toggle (SwitchRow)
+        const smoothZoomRow = new Adw.SwitchRow({
+            title: _('Smooth Zoom'),
+            subtitle: _('Enable animation for smoother transitions (may cause lag on slow hardware)'),
+        });
+        behaviorGroup.add(smoothZoomRow);
+
+        // Bind the setting directly
+        settings.bind(
+            'smooth-zoom',
+            smoothZoomRow,
+            'active',
+            Gio.SettingsBindFlags.DEFAULT
+        );
     }
 }
