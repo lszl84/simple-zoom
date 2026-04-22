@@ -2,7 +2,7 @@
   "name": "Simple Zoom",
   "description": "Hold Ctrl and scroll to zoom the entire screen. Respects natural scrolling settings.",
   "uuid": "simple-zoom@luke",
-  "url": "https://github.com/lszl84/deperto",
+  "url": "https://github.com/lszl84/simple-zoom",
   "shell-version": [
     "45",
     "46",
