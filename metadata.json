@@ -1,8 +1,8 @@
 {
-  "name": "Deperto (Zoom by Scroll)",
-  "description": "Screen zoom focused on the mouse using a modifier key + Scroll. Deperto Project.",
-  "uuid": "deperto@dennisguim.com",
-  "url": "https://github.com/dennisguim/deperto",
+  "name": "Simple Zoom",
+  "description": "Hold Ctrl and scroll to zoom the entire screen. Respects natural scrolling settings.",
+  "uuid": "simple-zoom@luke",
+  "url": "https://github.com/lszl84/deperto",
   "shell-version": [
     "45",
     "46",
@@ -11,9 +11,6 @@
     "49",
     "50"
   ],
-  "settings-schema": "org.gnome.shell.extensions.deperto",
-  "donations": {
-    "github": "dennisguim"
-  },
-  "version": 11
+  "settings-schema": "org.gnome.shell.extensions.simple-zoom",
+  "version": 1
 }

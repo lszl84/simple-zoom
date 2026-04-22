@@ -4,58 +4,54 @@ import GDesktopEnums from 'gi://GDesktopEnums';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
-export default class ZoomByScrollExtension extends Extension {
+export default class SimpleZoomExtension extends Extension {
     enable() {
-        console.log("[Deperto] Enabling extension - Direct Magnifier Mode");
+        console.log("[Simple Zoom] Enabling extension");
 
         this._settings = this.getSettings();
         
-        // 1. Configure Window Manager (Force Super as modifier to free up Alt)
-        this._wmSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.wm.preferences' });
-        this._originalWmModifier = this._wmSettings.get_string('mouse-button-modifier');
-        this._wmSettings.set_string('mouse-button-modifier', '<Super>');
+        // Read natural scroll setting from GNOME
+        this._mouseSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.peripherals.mouse' });
+        this._naturalScroll = this._mouseSettings.get_boolean('natural-scroll');
+        this._mouseSettingsChangedId = this._mouseSettings.connect('changed::natural-scroll', () => {
+            this._naturalScroll = this._mouseSettings.get_boolean('natural-scroll');
+        });
 
-        // 2. Cache settings for performance
+        // Cache settings for performance
         this._updateSettings();
         this._settingsChangedId = this._settings.connect('changed', this._updateSettings.bind(this));
 
-        // 3. Internal State
+        // Internal State
         this._currentZoom = 1.0;
         
-        // 4. Capture Events
+        // Capture Events
         this._stageSignalId = global.stage.connect('captured-event', this._onCapturedEvent.bind(this));
     }
 
     _updateSettings() {
-        this._modifierKey = this._settings.get_string('modifier-key');
         this._zoomStep = this._settings.get_double('zoom-step');
         this._smoothZoom = this._settings.get_boolean('smooth-zoom');
     }
 
     disable() {
-        console.log("[Deperto] Disabling extension...");
+        console.log("[Simple Zoom] Disabling extension...");
 
-        // 1. Disconnect Events
         if (this._stageSignalId) {
             global.stage.disconnect(this._stageSignalId);
             this._stageSignalId = null;
         }
 
-        // 2. Disconnect Settings
         if (this._settingsChangedId) {
             this._settings.disconnect(this._settingsChangedId);
             this._settingsChangedId = null;
         }
 
-        // 3. Restore original window manager settings
-        if (this._wmSettings) {
-            if (this._originalWmModifier) {
-                this._wmSettings.set_string('mouse-button-modifier', this._originalWmModifier);
-            }
-            this._wmSettings = null;
+        if (this._mouseSettingsChangedId) {
+            this._mouseSettings.disconnect(this._mouseSettingsChangedId);
+            this._mouseSettingsChangedId = null;
         }
+        this._mouseSettings = null;
 
-        // 4. Reset zoom and deactivate magnifier if we activated it
         if (this._currentZoom > 1.0) {
             this._applyZoom(1.0);
         }
@@ -70,24 +66,10 @@ export default class ZoomByScrollExtension extends Extension {
         }
 
         const state = event.get_state();
-        const selectedModifier = this._modifierKey;
-        
-        const hasSuper = (state & Clutter.ModifierType.MOD4_MASK) !== 0;
-        const hasAlt = (state & Clutter.ModifierType.MOD1_MASK) !== 0;
         const hasCtrl = (state & Clutter.ModifierType.CONTROL_MASK) !== 0;
 
-        let match = false;
-
-        // Check for specific combinations: Super+Alt or Super+Ctrl
-        if (selectedModifier === 'ctrl-super') {
-            match = hasCtrl && hasSuper;
-        } else {
-            // Default: super-alt
-            match = hasSuper && hasAlt;
-        }
-
-        // If not the exact combination, let the system handle it
-        if (!match) {
+        // Simple: just Ctrl, nothing else
+        if (!hasCtrl) {
             return Clutter.EVENT_PROPAGATE;
         }
 
@@ -98,11 +80,17 @@ export default class ZoomByScrollExtension extends Extension {
 
         if (direction === Clutter.ScrollDirection.SMOOTH) {
             const [dx, dy] = event.get_scroll_delta();
-            zoomChange = -dy * ZOOM_STEP; 
+            // Respect natural scrolling: if natural scroll is ON, invert the delta
+            const effectiveDy = this._naturalScroll ? -dy : dy;
+            zoomChange = -effectiveDy * ZOOM_STEP; 
         } else {
-            if (direction === Clutter.ScrollDirection.UP) {
+            // Respect natural scrolling for discrete events too
+            const scrollUp = this._naturalScroll ? Clutter.ScrollDirection.DOWN : Clutter.ScrollDirection.UP;
+            const scrollDown = this._naturalScroll ? Clutter.ScrollDirection.UP : Clutter.ScrollDirection.DOWN;
+            
+            if (direction === scrollUp) {
                 zoomChange = ZOOM_STEP;
-            } else if (direction === Clutter.ScrollDirection.DOWN) {
+            } else if (direction === scrollDown) {
                 zoomChange = -ZOOM_STEP;
             }
         }
@@ -126,7 +114,7 @@ export default class ZoomByScrollExtension extends Extension {
         this._currentZoom = zoomFactor;
 
         if (!Main.magnifier) {
-            console.error("[Deperto] Main.magnifier not found");
+            console.error("[Simple Zoom] Main.magnifier not found");
             return;
         }
 
@@ -144,7 +132,6 @@ export default class ZoomByScrollExtension extends Extension {
         // Apply zoom factor to all regions
         let regions = Main.magnifier.getZoomRegions();
         if (regions.length === 0 && this._currentZoom > 1.0) {
-            // If no regions exist but we need zoom, create and add one
             const [width, height] = global.display.get_size();
             const roi = { x: 0, y: 0, width, height };
             const viewPort = { x: 0, y: 0, width, height };
@@ -154,9 +141,6 @@ export default class ZoomByScrollExtension extends Extension {
         }
 
         regions.forEach(region => {
-            // Use _changeROI with configurable animation
-            // animate: true is smoother but can lag during rapid scrolling (Issue azacio)
-            // animate: false is much faster and more responsive (Issue account1009)
             region._changeROI({
                 xMagFactor: zoomFactor,
                 yMagFactor: zoomFactor,
@@ -164,7 +148,6 @@ export default class ZoomByScrollExtension extends Extension {
                 animate: this._smoothZoom,
             });
             
-            // Ensure proportional tracking so it follows the mouse
             if (region.getMouseTrackingMode() !== GDesktopEnums.MagnifierMouseTrackingMode.PROPORTIONAL) {
                 region.setMouseTrackingMode(GDesktopEnums.MagnifierMouseTrackingMode.PROPORTIONAL);
             }

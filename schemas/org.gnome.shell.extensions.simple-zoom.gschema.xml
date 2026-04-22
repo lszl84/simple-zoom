@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schemalist gettext-domain="deperto">
-  <schema id="org.gnome.shell.extensions.deperto" path="/org/gnome/shell/extensions/deperto/">
-    <key name="modifier-key" type="s">
-      <default>'super-alt'</default>
-      <summary>Modifier key to activate zoom</summary>
-      <description>The key combination to hold while scrolling to zoom. Options: super-alt, ctrl-super.</description>
-    </key>
+<schemalist gettext-domain="simple-zoom">
+  <schema id="org.gnome.shell.extensions.simple-zoom" path="/org/gnome/shell/extensions/simple-zoom/">
     <key name="zoom-step" type="d">
       <default>0.25</default>
       <summary>Zoom step size</summary>
